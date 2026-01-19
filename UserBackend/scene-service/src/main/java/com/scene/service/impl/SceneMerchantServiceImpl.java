@@ -1,6 +1,5 @@
 package com.scene.service.impl;
 
-
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -32,7 +31,7 @@ public class SceneMerchantServiceImpl extends ServiceImpl<SceneMerchantMapper, S
     public PageDTO<SceneMerchantVO> queryMerchants(SceneMerchantQueryDTO queryDTO) {
         // 1. 构建查询条件
         LambdaQueryWrapper<SceneMerchant> wrapper = new LambdaQueryWrapper<>();
-        
+
         // 2. 分页查询
         Page<SceneMerchant> result = page(queryDTO.toMpPage(), wrapper);
 
@@ -45,7 +44,12 @@ public class SceneMerchantServiceImpl extends ServiceImpl<SceneMerchantMapper, S
             location.setLat(sceneMerchant.getLat());
             location.setLng(sceneMerchant.getLng());
             vo.setLocation(location);
-            
+
+            // 兼容前端字段（直出经纬度与描述）
+            vo.setLat(sceneMerchant.getLat());
+            vo.setLng(sceneMerchant.getLng());
+            vo.setDesc(sceneMerchant.getDescription());
+
             // 设置热度值
             vo.setHot(sceneMerchant.getHot());
 
@@ -72,23 +76,22 @@ public class SceneMerchantServiceImpl extends ServiceImpl<SceneMerchantMapper, S
             } else if ("hot".equals(queryDTO.getSort())) {
                 // 使用VO中的热度值进行排序
                 voList.sort((a, b) -> Integer.compare(
-                    b.getHot() != null ? b.getHot() : 0, 
-                    a.getHot() != null ? a.getHot() : 0
+                        b.getHot() != null ? b.getHot() : 0,
+                        a.getHot() != null ? a.getHot() : 0
                 ));
             }
         }
-        
+
         // 5. 创建新的Page对象，包含排序后的数据
         Page<SceneMerchantVO> sortedPage = new Page<>(result.getCurrent(), result.getSize(), result.getTotal());
         sortedPage.setRecords(voList);
-        
+
         // 6. 使用PageDTO的of方法创建返回结果
         return PageDTO.of(sortedPage, vo -> vo);
     }
-    
+
     /**
-     * 计算两点之间的距离（单位：米）
-     * 使用Haversine公式计算球面两点间距离
+     * 计算两点之间的距离（单位：米） 使用Haversine公式计算球面两点间距离
      */
     private double calculateDistance(BigDecimal lat1, BigDecimal lng1, BigDecimal lat2, BigDecimal lng2) {
         // 转换为弧度
@@ -96,21 +99,21 @@ public class SceneMerchantServiceImpl extends ServiceImpl<SceneMerchantMapper, S
         double lng1Rad = Math.toRadians(lng1.doubleValue());
         double lat2Rad = Math.toRadians(lat2.doubleValue());
         double lng2Rad = Math.toRadians(lng2.doubleValue());
-        
+
         // Haversine公式
         double dLat = lat2Rad - lat1Rad;
         double dLng = lng2Rad - lng1Rad;
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(lat1Rad) * Math.cos(lat2Rad) *
-                Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(lat1Rad) * Math.cos(lat2Rad)
+                * Math.sin(dLng / 2) * Math.sin(dLng / 2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        
+
         // 地球半径（米）
         double earthRadius = 6371000;
-        
+
         return earthRadius * c;
     }
-    
+
     /**
      * 格式化距离显示
      */
@@ -121,8 +124,5 @@ public class SceneMerchantServiceImpl extends ServiceImpl<SceneMerchantMapper, S
             return BigDecimal.valueOf(distance / 1000).setScale(1, RoundingMode.HALF_UP) + "km";
         }
     }
-    
-
-    
 
 }

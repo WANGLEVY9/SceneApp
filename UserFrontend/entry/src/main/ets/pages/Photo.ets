@@ -80,9 +80,14 @@ export struct Photo {
       return
     }
     
-    // 获取当前位置（这里使用模拟数据，实际应该调用定位API）
-    const lat = 23.123456
-    const lng = 113.123456
+    // 模拟定位：直接使用所选打卡点的经纬度，避免距离校验失败
+    const lat = this.selectedSpot.location?.lat ?? this.selectedSpot.lat
+    const lng = this.selectedSpot.location?.lng ?? this.selectedSpot.lng
+
+    if (lat === undefined || lng === undefined) {
+      this.showToast('打卡点缺少位置信息，请稍后重试')
+      return
+    }
     
     try {
       const request: SubmitCheckinRequest = {

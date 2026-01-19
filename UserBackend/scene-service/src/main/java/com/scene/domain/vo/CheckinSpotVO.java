@@ -22,13 +22,25 @@ public class CheckinSpotVO implements Serializable {
     @ApiModelProperty(value = "打卡点名称")
     private String name;
 
+    @ApiModelProperty(value = "纬度")
+    private BigDecimal lat;
+
+    @ApiModelProperty(value = "经度")
+    private BigDecimal lng;
+
+    @ApiModelProperty(value = "有效半径（米）")
+    private Integer radius;
+
+    @ApiModelProperty(value = "热度")
+    private Integer hot;
+
     @ApiModelProperty(value = "位置信息")
     private LocationVO location;
 
     @Data
     @ApiModel(value = "位置信息")
     public static class LocationVO implements Serializable {
-        
+
         private static final long serialVersionUID = 1L;
 
         @ApiModelProperty(value = "纬度")

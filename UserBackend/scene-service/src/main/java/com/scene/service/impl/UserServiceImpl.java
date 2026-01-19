@@ -17,6 +17,7 @@ import com.scene.utils.JwtTool;
 import com.scene.utils.RegexUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,8 @@ import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import static com.scene.utils.Constants.*;
@@ -49,19 +52,37 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
+    @Value("${hm.redis.enabled:true}")
+    private boolean redisEnabled;
+
+    private final Map<String, LocalCode> localCodes = new ConcurrentHashMap<>();
+
+    private final Map<String, LocalDateTime> localLimits = new ConcurrentHashMap<>();
+
     @Override
     public void sendCode(String phone) {
         boolean phoneInvalid = RegexUtils.isPhoneInvalid(phone);
         if (phoneInvalid) {
             throw new BadRequestException("手机号格式有误");
         }
-        if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(LOGIN_LIMIT_KEY + phone))) {
-            throw new BadRequestException("操作太频繁，请60秒后重试");
+        LocalDateTime now = LocalDateTime.now();
+        if (redisEnabled) {
+            if (Boolean.TRUE.equals(stringRedisTemplate.hasKey(LOGIN_LIMIT_KEY + phone))) {
+                throw new BadRequestException("操作太频繁，请60秒后重试");
+            }
+        } else {
+            if (isLimited(phone, now)) {
+                throw new BadRequestException("操作太频繁，请60秒后重试");
+            }
         }
         String code = RandomUtil.randomNumbers(6);
-        // set key value ex 300
-        stringRedisTemplate.opsForValue().set(LOGIN_CODE_KEY + phone, code, LOGIN_CODE_TTL, TimeUnit.MINUTES);
-        stringRedisTemplate.opsForValue().set(LOGIN_LIMIT_KEY + phone, "code", LOGIN_LIMIT_TTL, TimeUnit.MINUTES);
+        if (redisEnabled) {
+            stringRedisTemplate.opsForValue().set(LOGIN_CODE_KEY + phone, code, LOGIN_CODE_TTL, TimeUnit.MINUTES);
+            stringRedisTemplate.opsForValue().set(LOGIN_LIMIT_KEY + phone, "code", LOGIN_LIMIT_TTL, TimeUnit.MINUTES);
+        } else {
+            saveLocalCode(phone, code, now);
+            saveLocalLimit(phone, now);
+        }
         log.debug("发送短信验证码成功，验证码：{}", code);
     }
 
@@ -99,7 +120,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     @Override
     public void setupAccount(Long userId, SetupAccountDTO setupAccountDTO) {
         User user = getById(userId);
-        if (user == null) throw new BadRequestException("用户不存在");
+        if (user == null) {
+            throw new BadRequestException("用户不存在");
+        }
         if (StringUtils.hasText(user.getUsername()) || StringUtils.hasText(user.getPassword())) {
             throw new BadRequestException("已设置过用户名或密码，无法重复初次设置");
         }
@@ -121,7 +144,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     @Override
     public void changeUsername(Long userId, String username) {
         User user = getById(userId);
-        if (user == null) throw new BadRequestException("用户不存在");
+        if (user == null) {
+            throw new BadRequestException("用户不存在");
+        }
         if (RegexUtils.isUsernameInvalid(username)) {
             throw new BadRequestException("用户名格式不合法");
         }
@@ -156,7 +181,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     @Override
     public void updateProfile(Long userId, UpdateProfileDTO updateProfileDTO) {
         User user = getById(userId);
-        if (user == null) throw new BadRequestException("用户不存在");
+        if (user == null) {
+            throw new BadRequestException("用户不存在");
+        }
         lambdaUpdate()
                 .eq(User::getId, userId)
                 .set(User::getAvatarUrl, updateProfileDTO.getAvatarUrl())
@@ -180,12 +207,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
     }
 
     public User loginOrRegisterByCode(String phone, String code) {
-        String cacheCode = stringRedisTemplate.opsForValue().get(LOGIN_CODE_KEY + phone);
+        LocalDateTime now = LocalDateTime.now();
+        String cacheCode = redisEnabled
+                ? stringRedisTemplate.opsForValue().get(LOGIN_CODE_KEY + phone)
+                : getLocalCode(phone, now);
         if (code == null || !code.equals(cacheCode)) {
             throw new BadRequestException("验证码错误或已过期");
         }
         // 验证码通过，就删除（用完即失效）
-        stringRedisTemplate.delete(LOGIN_CODE_KEY + phone);
+        if (redisEnabled) {
+            stringRedisTemplate.delete(LOGIN_CODE_KEY + phone);
+        } else {
+            localCodes.remove(phone);
+        }
         User user = lambdaQuery().eq(User::getPhone, phone).one();
         if (user == null) {
             user = createUserWithPhone(phone);
@@ -225,5 +259,48 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         return lambdaQuery()
                 .apply("username = {0} COLLATE utf8mb4_0900_as_cs", username)
                 .count() > 0;
+    }
+
+    private boolean isLimited(String phone, LocalDateTime now) {
+        LocalDateTime expire = localLimits.get(phone);
+        if (expire == null) {
+            return false;
+        }
+        if (expire.isBefore(now)) {
+            localLimits.remove(phone);
+            return false;
+        }
+        return true;
+    }
+
+    private void saveLocalLimit(String phone, LocalDateTime now) {
+        localLimits.put(phone, now.plusMinutes(LOGIN_LIMIT_TTL));
+    }
+
+    private void saveLocalCode(String phone, String code, LocalDateTime now) {
+        localCodes.put(phone, new LocalCode(code, now.plusMinutes(LOGIN_CODE_TTL)));
+    }
+
+    private String getLocalCode(String phone, LocalDateTime now) {
+        LocalCode localCode = localCodes.get(phone);
+        if (localCode == null) {
+            return null;
+        }
+        if (localCode.expireAt.isBefore(now)) {
+            localCodes.remove(phone);
+            return null;
+        }
+        return localCode.code;
+    }
+
+    private static class LocalCode {
+
+        private final String code;
+        private final LocalDateTime expireAt;
+
+        LocalCode(String code, LocalDateTime expireAt) {
+            this.code = code;
+            this.expireAt = expireAt;
+        }
     }
 }

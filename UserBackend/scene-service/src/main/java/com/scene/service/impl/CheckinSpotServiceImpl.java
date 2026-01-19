@@ -25,17 +25,23 @@ public class CheckinSpotServiceImpl extends ServiceImpl<CheckinSpotMapper, Check
         // 查询所有打卡点
         List<CheckinSpot> spots = list(new LambdaQueryWrapper<CheckinSpot>()
                 .orderByDesc(CheckinSpot::getHot));
-        
+
         // 转换为VO
         return spots.stream().map(spot -> {
             CheckinSpotVO vo = BeanUtils.copyBean(spot, CheckinSpotVO.class);
-            
+
             // 设置位置信息
             CheckinSpotVO.LocationVO location = new CheckinSpotVO.LocationVO();
             location.setLat(spot.getLat());
             location.setLng(spot.getLng());
             vo.setLocation(location);
-            
+
+            // 直出关键字段，方便前端直接使用
+            vo.setLat(spot.getLat());
+            vo.setLng(spot.getLng());
+            vo.setRadius(spot.getRadius());
+            vo.setHot(spot.getHot());
+
             return vo;
         }).collect(Collectors.toList());
     }
