@@ -1,0 +1,40 @@
+@import './base.css';
+
+html, body, #app { height: 100%; }
+
+#app {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  font-weight: normal;
+  box-sizing: border-box;
+  background: #f5f7fb;
+}
+
+#app.full {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+/* 全局可复用样式（管理端共用） */
+.card { background:#fff; padding:16px; border-radius:12px; box-shadow: 0 6px 18px rgba(19,40,74,0.06); margin-bottom:16px; border:1px solid #edf2f9 }
+.button { background: linear-gradient(135deg,#12a1f0,#0a7dc2); color:#fff; padding:10px 14px; border-radius:10px; border:none; cursor:pointer; font-weight:600; box-shadow:0 4px 12px rgba(0,0,0,0.08); transition: all .15s ease }
+.button:hover { transform: translateY(-1px); box-shadow:0 6px 16px rgba(0,0,0,0.12); }
+.button:disabled { opacity:0.65; cursor:not-allowed; transform:none; box-shadow:none }
+.button.danger { background: linear-gradient(135deg,#f86b6b,#e44f4f) }
+.table { width:100%; border-collapse:collapse; background:#fff }
+.table th, .table td { text-align:left; padding:12px; border-bottom:1px solid #f0f2f5; color:#1f2937 }
+.table th { background:#f9fbff; font-weight:600; color:#4b5563 }
+.form-row { display:flex; gap:0.6rem; align-items:center; margin-bottom:0.8rem }
+.form-row input, .form-row textarea { flex:1; padding:10px 12px; border:1px solid #e6eef7; border-radius:8px; background:#fbfeff; transition:border-color .15s ease, box-shadow .15s ease }
+.form-row input:focus, .form-row textarea:focus { outline:none; border-color:#0a7dc2; box-shadow:0 0 0 3px rgba(18,161,240,0.15) }
+
+/* 链接样式 */
+a, .green { text-decoration: none; color: #0a7dc2; transition: 0.2s; padding: 3px; }
+
+@media (hover: hover) {
+  a:hover { background-color: rgba(10, 125, 194, 0.08); }
+}

@@ -1,0 +1,67 @@
+server:
+  port: 8080
+spring:
+  http:
+    encoding:
+      enabled: true
+      charset: UTF-8
+      force: true  
+  application:
+    name: scene-service
+  profiles:
+    active: dev
+  datasource:
+    url: jdbc:mysql://${hm.db.host}:3306/scene?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=Asia/Shanghai
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: ${hm.db.pw}
+mybatis-plus:
+  configuration:
+    default-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler
+  global-config:
+    db-config:
+      update-strategy: not_null
+      id-type: auto
+logging:
+  level:
+    com.hmall: debug
+  pattern:
+    dateformat: HH:mm:ss:SSS
+  file:
+    path: "logs/${spring.application.name}"
+knife4j:
+  enable: true
+  openapi:
+    title: “景区导览”平台接口文档
+    description: "“景区导览”平台接口文档"
+    email: 231250055@smail.nju.edu.cn
+    concat: 吴少
+    url: https://www.itcast.cn
+    version: v1.0.0
+    group:
+      default:
+        group-name: default
+        api-rule: package
+        api-rule-resources:
+          - com.scene.controller
+hm:
+  jwt:
+    location: classpath:hmall.jks
+    alias: hmall
+    password: hmall123
+    tokenTTL: 30m
+  auth:
+    excludePaths:
+      # 1. 登录接口（已配置，正确）
+      - /api/admin/auth/login
+      # 2. 公开接口（已配置，正确）
+      - /api/client/intro
+      # 3. Swagger 文档核心路径（修正错误，补充缺失路径）
+      - /doc.html               # 去掉 #/**，直接放行 doc.html 页面
+      - /swagger-ui.html        # 补充 Swagger 旧版前端路径（兼容不同版本）
+      - /swagger-ui/**          # 放行 Swagger 前端静态资源（正确）
+      - /v3/api-docs/**         # 放行接口文档 JSON 数据源（正确）
+      - /webjars/**             # 放行 Swagger 依赖的前端组件（正确）
+      - /swagger-resources/**   # 补充 Swagger 资源路径（部分版本需要）
+
+# keytool -genkeypair -alias hmall -keyalg RSA -keypass hmall123 -keystore hmall.jks -storepass hmall123

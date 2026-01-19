@@ -1,0 +1,20 @@
+{
+  "routerMap": [
+    {
+      "name": "Ad",
+      "pageSourceFile": "src/main/ets/pages/Ad.ets",
+      "buildFunction": "AdBuilder",
+      "data": {
+        "description": "this is Ad"
+      }
+    },
+    {
+      "name": "Home",
+      "pageSourceFile": "src/main/ets/pages/Home.ets",
+      "buildFunction": "HomeBuilder",
+      "data": {
+        "description": "this is Home"
+      }
+    }
+  ]
+}
