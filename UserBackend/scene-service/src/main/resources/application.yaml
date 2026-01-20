@@ -43,10 +43,10 @@ knife4j:
   openapi:
     title: “景区导览”平台接口文档
     description: "“景区导览”平台接口文档"
-    email: 231250055@smail.nju.edu.cn
-    concat: 吴少
+    email: 231250082@smail.nju.edu.cn
+    concat: 凛栀月
     url: https://www.itcast.cn
-    version: v1.0.0
+    version: v1.2.0
     group:
       default:
         group-name: default
