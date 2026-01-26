@@ -1,4 +1,5 @@
-# SceneApp（罗浮山景区导览）
+# SceneApp（罗浮山景区导览App）
+NJUSE 2025Fall 移动互联网软件工程 期末项目
 
 三端一体的景区导览应用：
 - 用户端后端（UserBackend）：Spring Boot 微服务，提供 `/api/client/**` 能力。
@@ -28,3 +29,8 @@
 - 架构（20%）：说明分层设计、公用模块复用、安全（JWT/拦截器）、日志与配置分环境化，提供接口/日志输出作为证据。
 - 过程（10%）：展示开发分工（后端/前端/移动端）、使用的工具链（DevEco Studio、Vite、Maven）、代码与脚本同步。
 - 产物（10%）：代码仓库、SQL 脚本、构建产物（jar/dist/hap）与文档（各子 README）。
+
+## 联络咨询
+- 王泰杰
+-- Email:231250082@smail.nju.edu.cn
+-- WX:WANGLEVY9
